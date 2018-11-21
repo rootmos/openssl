@@ -173,6 +173,7 @@ static OPT_PAIR formats[] = {
     {"text", OPT_FMT_TEXT},
     {"http", OPT_FMT_HTTP},
     {"pvk", OPT_FMT_PVK},
+    {"binary", OPT_FMT_BINARY},
     {NULL}
 };
 
@@ -205,6 +206,12 @@ int opt_format(const char *s, unsigned long flags, int *result)
         if ((flags & OPT_FMT_PEMDER) == 0)
             return opt_format_error(s, flags);
         *result = FORMAT_ASN1;
+        break;
+    case 'B':
+    case 'b':
+        if ((flags & OPT_FMT_BINARY) == 0)
+            return opt_format_error(s, flags);
+        *result = FORMAT_BINARY;
         break;
     case 'T':
     case 't':

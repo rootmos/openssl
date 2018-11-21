@@ -48,7 +48,7 @@ const OPTIONS ec_options[] = {
     {"in", OPT_IN, 's', "Input file"},
     {"inform", OPT_INFORM, 'f', "Input format - DER or PEM"},
     {"out", OPT_OUT, '>', "Output file"},
-    {"outform", OPT_OUTFORM, 'F', "Output format - DER or PEM"},
+    {"outform", OPT_OUTFORM, 'f', "Output format - DER or PEM"},
     {"noout", OPT_NOOUT, '-', "Don't print key out"},
     {"text", OPT_TEXT, '-', "Print the key"},
     {"param_out", OPT_PARAM_OUT, '-', "Print the elliptic curve parameters"},
@@ -104,7 +104,9 @@ int ec_main(int argc, char **argv)
             infile = opt_arg();
             break;
         case OPT_OUTFORM:
-            if (!opt_format(opt_arg(), OPT_FMT_PEMDER, &outformat))
+            if (!opt_format(opt_arg(),
+                            OPT_FMT_PEMDER | OPT_FMT_BINARY,
+                            &outformat))
                 goto opthelp;
             break;
         case OPT_OUT:
@@ -253,7 +255,7 @@ int ec_main(int argc, char **argv)
             assert(private);
             i = i2d_ECPrivateKey_bio(out, eckey);
         }
-    } else {
+    } else if (outformat == FORMAT_PEM) {
         if (param_out) {
             i = PEM_write_bio_ECPKParameters(out, group);
         } else if (pubin || pubout) {
@@ -262,6 +264,18 @@ int ec_main(int argc, char **argv)
             assert(private);
             i = PEM_write_bio_ECPrivateKey(out, eckey, enc,
                                            NULL, 0, NULL, passout);
+        }
+    } else {
+        if (pubin || pubout) {
+            unsigned char* pub = NULL;
+            size_t publen = EC_KEY_key2buf(eckey, form, &pub, NULL);
+            BIO_write(out, pub, publen);
+            OPENSSL_free(pub);
+        } else {
+            BIO_printf(bio_err, "only public keys supported!\n");
+            ERR_print_errors(bio_err);
+            ret = 1;
+            goto end;
         }
     }
 
